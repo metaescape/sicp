@@ -150,7 +150,7 @@ def test_evaluate_file():
     path = os.path.abspath(__file__)
     file_name = path.split("/")[-1].split(".")[0]
     core = file_name.split("_")[-1]
-    test_file = f"{core}.scm"
+    test_file = f"tests/{core}.scm"
     for exp in read_and_parse(test_file):
         print(exp)
     evaluate_file(test_file)
