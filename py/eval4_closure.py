@@ -7,6 +7,7 @@ support closure (high order function)
 
 from typing import List
 import string
+import os
 
 
 # NUMERAL_STARTS is from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
@@ -199,10 +200,13 @@ def evaluate_file(path: str):
 
 
 def test_evaluate_file():
-    path = "closure.scm"
-    for exp in read_and_parse(path):
+    path = os.path.abspath(__file__)
+    file_name = path.split("/")[-1].split(".")[0]
+    core = file_name.split("_")[-1]
+    test_file = f"{core}.scm"
+    for exp in read_and_parse(test_file):
         print(exp)
-    evaluate_file(path)
+    evaluate_file(test_file)
 
 
 if __name__ == "__main__":

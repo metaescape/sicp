@@ -1,9 +1,14 @@
-from typing import List
-import string
+"""
+A scheme interpreter that support car/cdr/cons/quote/cond/if/true/false
+
+also support lambda expression as the first element of a list
 
 """
-A scheme interpreter that only support car/cdr/cons/quote
-"""
+
+from typing import List
+import string
+import os
+
 
 # NUMERAL_STARTS is from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
@@ -23,6 +28,10 @@ def clean_expression(expression: str):
 def maybe_to_number(token: str):
     if token in set("+-.") and len(token) == 1:
         return token
+    if token == "true":
+        return 1
+    if token == "false":
+        return 0
     if token[0] in _NUMERAL_STARTS:
         try:
             return int(token)
@@ -89,7 +98,7 @@ def read_and_parse(path: str) -> List[List[str]]:
     expressions = []
     for exp in expressions_str:
         exp = exp.strip()
-        if exp[0] in ";#":
+        if exp == "" or exp[0] in ";#":
             continue
         exp = clean_expression(exp)
         tokens = tokenize(exp)
@@ -100,27 +109,54 @@ def read_and_parse(path: str) -> List[List[str]]:
     return expressions
 
 
-def test_read_and_parse():
-    print(read_and_parse("list.scm"))
-
-
 # codes above are for parsing the scheme code
 
 
-def evaluate(exp: list):
+def evaluate(exp: list, env: list = []):
     if type(exp) is int or type(exp) is float:
         return exp
-    if type(exp) is str and exp in apply_map:
-        return exp
+    if type(exp) is str:
+        value = lookup(exp, env)
+        if value is None:
+            return exp
+        return value
     if type(exp) is list:
-        return apply(exp[0], [evaluate(c) for c in exp[1:]])
+        if exp[0] == "if":
+            assert len(exp) == 4, "if statement should have 3 arguments"
+            return (
+                evaluate(exp[2], env)
+                if evaluate(exp[1], env)
+                else evaluate(exp[3], env)
+            )
+        if exp[0] == "cond":
+            for i in range(1, len(exp)):
+                if evaluate(exp[i][0], env):
+                    return evaluate(exp[i][1], env)
+            return None
+        # if exp[0] == "lambda":
+        #     return exp
+        if (
+            type(exp[0]) == list
+        ):  # lambda expression, only handle non nested lambda
+            return apply_lambda(exp, env)
+
+        return apply(exp[0], [evaluate(c, env) for c in exp[1:]])
+
     else:
         raise TypeError(f"{exp} is not a number or call expression")
 
 
 def apply(proc, args):
-    # print("app--", proc, args)
     return apply_map[proc](args)
+
+
+def apply_lambda(exp, env):
+    parameters = exp[0][1]
+    arguments = [evaluate(c, env) for c in exp[1:]]
+    env = create_env(dict(zip(parameters, arguments)), env)
+    # print(env, exp)
+    # print(env, exp[0][2])
+    return evaluate(exp[0][2], env)
 
 
 apply_map = {
@@ -129,7 +165,13 @@ apply_map = {
     "*": lambda x: x[0] * x[1],
     "/": lambda x: x[0] / x[1],
     "//": lambda x: x[0] // x[1],
+    ">": lambda x: x[0] > x[1],
+    "<": lambda x: x[0] < x[1],
+    "=": lambda x: x[0] == x[1],
+    ">=": lambda x: x[0] >= x[1],
+    "<=": lambda x: x[0] <= x[1],
     ".": None,  # not a function ,just a placeholder
+    "cond": None,  # not a function ,just a placeholder
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list
@@ -143,6 +185,20 @@ apply_map = {
 }
 
 
+env = []
+
+
+def lookup(variable: str, env: list):
+    for frame in env:
+        if variable in frame:
+            return frame[variable]
+    return None
+
+
+def create_env(variables: dict, env: list):
+    return [variables] + env
+
+
 def evaluate_file(path: str):
     expressions = read_and_parse(path)
     for exp in expressions:
@@ -150,7 +206,13 @@ def evaluate_file(path: str):
 
 
 def test_evaluate_file():
-    evaluate_file("list.scm")
+    path = os.path.abspath(__file__)
+    file_name = path.split("/")[-1].split(".")[0]
+    core = file_name.split("_")[-1]
+    test_file = f"{core}.scm"
+    for exp in read_and_parse(test_file):
+        print(exp)
+    evaluate_file(test_file)
 
 
 if __name__ == "__main__":
@@ -161,5 +223,4 @@ if __name__ == "__main__":
     parser.add_argument("--test", action="store_true")
     args = parser.parse_args()
     if args.test:
-        test_read_and_parse()
         test_evaluate_file()
