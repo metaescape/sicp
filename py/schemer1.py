@@ -1,6 +1,10 @@
 from typing import List
 import string
 
+"""
+A scheme interpreter that only support car/cdr/cons/quote
+"""
+
 # NUMERAL_STARTS is from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
 
@@ -10,11 +14,14 @@ def tokenize(string):
 
 
 def clean_expression(expression: str):
-    return expression.replace("(", " ( ").replace(")", " ) ")
+    expression = expression.replace("(", " ( ").replace(")", " ) ")
+    # handle quote
+    expression = expression.replace("'", " ' ")
+    return expression
 
 
 def maybe_to_number(token: str):
-    if token in ["+", "-"] and len(token) == 1:
+    if token in set("+-.") and len(token) == 1:
         return token
     if token[0] in _NUMERAL_STARTS:
         try:
@@ -45,6 +52,27 @@ def to_list_ast(expression: List) -> List:
     return stack[0]
 
 
+def handle_quote(expression: List):
+    """
+    ['car', "'", [1, 2]] -> ['car', ["quote", 1, 2]]
+    """
+    i = 0
+    result = []
+    while i < len(expression):
+        if expression[i] == "'":
+            if i + 1 >= len(expression):
+                raise ValueError("quote must have an expression")
+            if type(expression[i + 1]) is list:
+                result.append(["quote"] + expression[i + 1])
+            else:
+                result.append(["quote", expression[i + 1]])
+            i += 2
+        else:
+            result.append(expression[i])
+            i += 1
+    return result
+
+
 def read_and_parse(path: str) -> List[List[str]]:
     """
     expressions are split by double "\n"
@@ -56,18 +84,20 @@ def read_and_parse(path: str) -> List[List[str]]:
 
     expressions = []
     for exp in expressions_str:
-        if exp.startswith(";") or exp.startswith("#"):
+        exp = exp.strip()
+        if exp[0] in ";#":
             continue
         exp = clean_expression(exp)
         tokens = tokenize(exp)
         tokens = [maybe_to_number(token) for token in tokens]
         exp = to_list_ast(tokens)
+        exp = handle_quote(exp)
         expressions.append(exp)
     return expressions
 
 
 def test_read_and_parse():
-    print(read_and_parse("caculate.scm"))
+    print(read_and_parse("list.scm"))
 
 
 # codes above are for parsing the scheme code
@@ -80,9 +110,13 @@ def evaluate(exp: list):
         return exp
     if type(exp) is list:
         return apply(exp[0], [evaluate(c) for c in exp[1:]])
-
     else:
         raise TypeError(f"{exp} is not a number or call expression")
+
+
+def apply(proc, args):
+    # print("app--", proc, args)
+    return apply_map[proc](args)
 
 
 apply_map = {
@@ -91,11 +125,18 @@ apply_map = {
     "*": lambda x: x[0] * x[1],
     "/": lambda x: x[0] / x[1],
     "//": lambda x: x[0] // x[1],
+    ".": None,  # not a function ,just a placeholder
+    "car": lambda x: x[0][
+        0
+    ],  # pay attention, the arguments of car is a nested list
+    "cdr": lambda x: (
+        x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
+    ),  # handle dot list
+    "quote": lambda x: x[0] if len(x) == 1 else x,  # pay attention
+    "cons": lambda x: (
+        [x[0]] + x[1] if type(x[1]) is list else [x[0], ".", x[1]]
+    ),
 }
-
-
-def apply(proc, args):
-    return apply_map[proc](args)
 
 
 def evaluate_file(path: str):
@@ -105,7 +146,7 @@ def evaluate_file(path: str):
 
 
 def test_evaluate_file():
-    evaluate_file("caculate.scm")
+    evaluate_file("list.scm")
 
 
 if __name__ == "__main__":
