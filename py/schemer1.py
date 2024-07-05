@@ -56,19 +56,23 @@ def handle_quote(expression: List):
     """
     ['car', "'", [1, 2]] -> ['car', ["quote", 1, 2]]
     """
-    i = 0
     result = []
+    i = 0
     while i < len(expression):
-        if expression[i] == "'":
-            if i + 1 >= len(expression):
-                raise ValueError("quote must have an expression")
+        ele = expression[i]
+        if type(ele) is list:
+            result.append(handle_quote(ele))
+            i += 1
+        elif type(ele) is str and ele == "'":
+            if i + 1 == len(expression):
+                raise ValueError("quote should have an expression")
             if type(expression[i + 1]) is list:
                 result.append(["quote"] + expression[i + 1])
             else:
-                result.append(["quote", expression[i + 1]])
+                result.append(["quote"] + [expression[i + 1]])
             i += 2
         else:
-            result.append(expression[i])
+            result.append(ele)
             i += 1
     return result
 
