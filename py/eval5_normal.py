@@ -122,7 +122,7 @@ def evaluate(exp: list, env: list = []):
                 value[0], value[1]
             )  # recursion here to expand delay
         if value is None:
-            return apply_map.get(exp, None)
+            return apply_map.get(exp, exp)
         return value
     if type(exp) is list:
         if exp[0] == "if":

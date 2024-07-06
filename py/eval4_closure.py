@@ -118,7 +118,7 @@ def evaluate(exp: list, env: list = []):
     if type(exp) is str:
         value = lookup(exp, env)
         if value is None:
-            return apply_map.get(exp, None)
+            return apply_map.get(exp, exp)
         return value
     if type(exp) is list:
         if exp[0] == "if":
