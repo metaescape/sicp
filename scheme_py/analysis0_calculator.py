@@ -77,12 +77,10 @@ def evaluate(exp: list):
 def analysis(exp: list):
     if isinstance(exp, (int, float)):
         return lambda: exp
-    if type(exp) is str and exp in apply_map:
-        return lambda: apply_map[exp]
     elif isinstance(exp, list):
-        proc = analysis(exp[0])
+        proc = apply_map[exp[0]]
         args = [analysis(arg) for arg in exp[1:]]
-        return lambda: proc()([arg() for arg in args])
+        return lambda: proc([arg() for arg in args])
     else:
         raise TypeError(f"{exp} is not a number, string, or list")
 
