@@ -10,7 +10,7 @@ import string
 import os
 
 
-# NUMERAL_STARTS is from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
+# _NUMERAL_STARTS from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
 
 
@@ -28,10 +28,7 @@ def clean_expression(expression: str):
 def maybe_to_number(token: str):
     if token in set("+-.") and len(token) == 1:
         return token
-    if token == "true":
-        return 1
-    if token == "false":
-        return 0
+
     if token[0] in _NUMERAL_STARTS:
         try:
             return int(token)
@@ -76,7 +73,7 @@ def handle_quote(expression: List):
             if i + 1 == len(expression):
                 raise ValueError("quote should have an expression")
             if type(expression[i + 1]) is list:
-                result.append(["quote"] + expression[i + 1])
+                result.append(["list"] + expression[i + 1])
             else:
                 result.append(["quote"] + [expression[i + 1]])
             i += 2
@@ -103,9 +100,9 @@ def read_and_parse(path: str) -> List[List[str]]:
         exp = clean_expression(exp)
         tokens = tokenize(exp)
         tokens = [maybe_to_number(token) for token in tokens]
-        exp = to_list_ast(tokens)
-        exp = handle_quote(exp)
-        expressions.append(exp)
+        list_tree = to_list_ast(tokens)
+        list_tree = handle_quote(list_tree)
+        expressions.append(list_tree)
     return expressions
 
 
@@ -113,13 +110,21 @@ def read_and_parse(path: str) -> List[List[str]]:
 
 
 def evaluate(exp: list, env: list = []):
-    if type(exp) is int or type(exp) is float:
+    if isinstance(exp, (int, float)):
         return exp
     if type(exp) is str:
+        # lambda will not appear in this branch
         value = lookup(exp, env)
-        if value is None:
-            return apply_map.get(exp, exp)
-        return value
+        if value is not None:
+            return value
+        if exp in KEYWORDS:
+            return KEYWORDS[exp]
+        return apply_map.get(
+            exp, exp
+        )  # primitive function name will be shown here
+        # if exp is not a primitive function,
+        # it will be treated as nonstandard quote or unreferenced variable
+
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
@@ -153,6 +158,13 @@ def apply(proc, args):
     return proc(args)
 
 
+KEYWORDS = {
+    ".": ".",  # not a function ,just a placeholder
+    "#t": True,
+    "#f": False,
+    "else": True,
+}
+
 apply_map = {
     "+": lambda x: sum(x),
     "-": lambda x: x[0] - x[1],
@@ -164,15 +176,14 @@ apply_map = {
     "=": lambda x: x[0] == x[1],
     ">=": lambda x: x[0] >= x[1],
     "<=": lambda x: x[0] <= x[1],
-    ".": None,  # not a function ,just a placeholder
-    "cond": None,  # not a function ,just a placeholder
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list
     "cdr": lambda x: (
         x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
     ),  # handle dot list
-    "quote": lambda x: x[0] if len(x) == 1 else x,  # pay attention
+    "quote": lambda x: f"'{x[0]}",  # add ' as a prefix
+    "list": lambda x: x,
     "cons": lambda x: (
         [x[0]] + x[1] if type(x[1]) is list else [x[0], ".", x[1]]
     ),

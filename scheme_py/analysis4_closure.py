@@ -1,10 +1,14 @@
+"""
+A scheme interpreter that support car/cdr/cons/quote/cond/if/true/false
+
+support closure (high order function)
+
+"""
+
 from typing import List
 import string
 import os
 
-"""
-A scheme interpreter that only support car/cdr/cons/quote/cond/if/true/false
-"""
 
 # _NUMERAL_STARTS from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
@@ -105,71 +109,68 @@ def read_and_parse(path: str) -> List[List[str]]:
 # codes above are for parsing the scheme code
 
 
-def evaluate(exp: list):
-    return analysis(exp, [{}])()
+def evaluate(exp: list, env=[{}]):
+    return analysis(exp)([KEYWORDS])
 
 
-def analysis(exp: list, env: list):
+def analysis(exp: list):
     if isinstance(exp, (int, float)):
-        return lambda: exp
-    if type(exp) is str:
-        if exp in KEYWORDS:
-            return lambda: KEYWORDS[exp]
-        value = lookup(exp, env)
-        if value is not None:
-            return value
-        return lambda: exp  # (nonstandard) quote or invalid variable
+        return lambda env: exp
+    if isinstance(exp, str):
+        return lambda env: (
+            lookup(exp, env) if lookup(exp, env) is not None else exp
+        )  # (nonstandard) quote or invalid variable, no built-in function here
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
-            predicate = analysis(exp[1], env)
-            consequent = analysis(exp[2], env)
-            alternative = analysis(exp[3], env)
-            return lambda: (consequent() if predicate() else alternative())
+            predicate = analysis(exp[1])
+            consequent = analysis(exp[2])
+            alternative = analysis(exp[3])
+            return lambda env: (
+                consequent(env) if predicate(env) else alternative(env)
+            )
         if exp[0] == "cond":
             clause_list = []
             for clause in exp[1:]:
                 predicate, consequent = clause
-                clause_list.append(
-                    (analysis(predicate, env), analysis(consequent, env))
-                )
+                clause_list.append((analysis(predicate), analysis(consequent)))
 
-            def cond():
+            def cond(env):
                 for predicate, consequent in clause_list:
-                    if predicate():
-                        return consequent()
+                    if predicate(env):
+                        return consequent(env)
                 return None
 
             return cond
+        if exp[0] == "lambda":
+            body = analysis(exp[2])
+            return lambda env: (exp[1], body, env)  # miss env
 
-        if type(exp[0]) is list:  # lambda
-            return apply_lambda(exp, env)
+        args_analysis = [analysis(e) for e in exp[1:]]
+        proc = analysis(exp[0])
 
-        proc = APPLY_MAP[exp[0]]
-        args = [analysis(arg, env) for arg in exp[1:]]
-        return lambda: proc([arg() for arg in args])
+        def _apply(env):
+            args = [arg(env) for arg in args_analysis]
+            func = proc(env)
+
+            if type(func) is tuple:
+                parameters, body, func_env = func
+                new_env = create_env(dict(zip(parameters, args)), func_env)
+
+                return body(new_env)
+
+            return func(args)
+
+        return _apply
     else:
         raise TypeError(f"{exp} is not a number or call expression")
 
 
-def apply_lambda(exp, env):
-    lambda_exp = exp[0]
-    args = exp[1:]
-    parameters = lambda_exp[1]
-    body = lambda_exp[2]  # do not support multiple expressions in body
-
-    arguments = [analysis(arg, env) for arg in args]
-    env = create_env(
-        dict(zip(parameters, arguments)), env
-    )  # key: lambda: value
-    bodyfunc = analysis(body, env)
-    return lambda: bodyfunc()
-
-
-KEYWORDS = {".": ".", "else": True, "#t": True, "#f": False}
-
-
-APPLY_MAP = {
+KEYWORDS = {
+    ".": ".",
+    "else": True,
+    "#t": True,
+    "#f": False,
     "+": lambda x: sum(x),
     "-": lambda x: x[0] - x[1],
     "*": lambda x: x[0] * x[1],
