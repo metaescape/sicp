@@ -105,10 +105,12 @@ def read_and_parse(path: str) -> List[List[str]]:
 
 
 def evaluate(exp: list):
-    if type(exp) is int or type(exp) is float:
+    if isinstance(exp, (int, float)):
         return exp
     if type(exp) is str:
-        return apply_map.get(exp, exp)
+        if exp in KEYWORDS:
+            return KEYWORDS[exp]
+        return exp  # (nonstandard) quote or invalid variable
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
@@ -128,6 +130,13 @@ def apply(proc, args):
     return apply_map[proc](args)
 
 
+KEYWORDS = {
+    ".": ".",
+    "else": True,
+    "#t": True,
+    "#f": False,
+}
+
 apply_map = {
     "+": lambda x: sum(x),
     "-": lambda x: x[0] - x[1],
@@ -139,10 +148,6 @@ apply_map = {
     "=": lambda x: x[0] == x[1],
     ">=": lambda x: x[0] >= x[1],
     "<=": lambda x: x[0] <= x[1],
-    ".": None,  # not a function ,just a placeholder
-    "else": True,
-    "#t": True,
-    "#f": False,
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list

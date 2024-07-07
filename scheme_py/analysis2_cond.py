@@ -24,10 +24,7 @@ def clean_expression(expression: str):
 def maybe_to_number(token: str):
     if token in set("+-.") and len(token) == 1:
         return token
-    if token == "#t":
-        return 1
-    if token == "#f":
-        return 0
+
     if token[0] in _NUMERAL_STARTS:
         try:
             return int(token)
@@ -116,11 +113,9 @@ def analysis(exp: list):
     if isinstance(exp, (int, float)):
         return lambda: exp
     if type(exp) is str:
-        if exp in APPLY_MAP:  # primitive functions
-            return lambda: APPLY_MAP[exp]
         if exp in KEYWORDS:
             return lambda: KEYWORDS[exp]
-        return lambda: exp
+        return lambda: exp  # (nonstandard) quote or invalid variable
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
@@ -143,9 +138,9 @@ def analysis(exp: list):
             return cond
         # apply function
 
-        proc = analysis(exp[0])
+        proc = APPLY_MAP[exp[0]]
         args = [analysis(arg) for arg in exp[1:]]
-        return lambda: proc()([arg() for arg in args])
+        return lambda: proc([arg() for arg in args])
     else:
         raise TypeError(f"{exp} is not a number or call expression")
 
