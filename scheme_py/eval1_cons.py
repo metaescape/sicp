@@ -105,10 +105,8 @@ def read_and_parse(path: str) -> List[List[str]]:
 
 
 def evaluate(exp: list):
-    if type(exp) is int or type(exp) is float:
+    if isinstance(exp, (int, float)) or exp == ".":
         return exp
-    if type(exp) is str and exp in apply_map:
-        return exp  # do not consider operators
     if type(exp) is list:
         return apply(exp[0], [evaluate(c) for c in exp[1:]])
     else:
@@ -126,7 +124,6 @@ apply_map = {
     "*": lambda x: x[0] * x[1],
     "/": lambda x: x[0] / x[1],
     "//": lambda x: x[0] // x[1],
-    ".": None,  # not a function ,just a placeholder
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list
