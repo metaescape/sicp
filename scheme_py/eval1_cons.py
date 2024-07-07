@@ -6,7 +6,7 @@ import os
 A scheme interpreter that only support car/cdr/cons/quote
 """
 
-# NUMERAL_STARTS is from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
+# _NUMERAL_STARTS from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
 
 
@@ -68,7 +68,7 @@ def handle_quote(expression: List):
             if i + 1 == len(expression):
                 raise ValueError("quote should have an expression")
             if type(expression[i + 1]) is list:
-                result.append(["quote"] + expression[i + 1])
+                result.append(["list"] + expression[i + 1])
             else:
                 result.append(["quote"] + [expression[i + 1]])
             i += 2
@@ -95,9 +95,9 @@ def read_and_parse(path: str) -> List[List[str]]:
         exp = clean_expression(exp)
         tokens = tokenize(exp)
         tokens = [maybe_to_number(token) for token in tokens]
-        exp = to_list_ast(tokens)
-        exp = handle_quote(exp)
-        expressions.append(exp)
+        list_tree = to_list_ast(tokens)
+        list_tree = handle_quote(list_tree)
+        expressions.append(list_tree)
     return expressions
 
 
@@ -108,7 +108,7 @@ def evaluate(exp: list):
     if type(exp) is int or type(exp) is float:
         return exp
     if type(exp) is str and exp in apply_map:
-        return exp
+        return exp  # do not consider operators
     if type(exp) is list:
         return apply(exp[0], [evaluate(c) for c in exp[1:]])
     else:
@@ -133,7 +133,8 @@ apply_map = {
     "cdr": lambda x: (
         x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
     ),  # handle dot list
-    "quote": lambda x: x[0] if len(x) == 1 else x,  # pay attention
+    "quote": lambda x: f"'{x[0]}",  # add ' as a prefix
+    "list": lambda x: x,
     "cons": lambda x: (
         [x[0]] + x[1] if type(x[1]) is list else [x[0], ".", x[1]]
     ),

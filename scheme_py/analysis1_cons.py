@@ -6,7 +6,7 @@ import os
 A scheme interpreter that only support car/cdr/cons/quote
 """
 
-# NUMERAL_STARTS is from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
+# _NUMERAL_STARTS from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
 
 
@@ -68,7 +68,7 @@ def handle_quote(expression: List):
             if i + 1 == len(expression):
                 raise ValueError("quote should have an expression")
             if type(expression[i + 1]) is list:
-                result.append(["quote"] + expression[i + 1])
+                result.append(["list"] + expression[i + 1])
             else:
                 result.append(["quote"] + [expression[i + 1]])
             i += 2
@@ -127,14 +127,15 @@ apply_map = {
     "*": lambda x: x[0] * x[1],
     "/": lambda x: x[0] / x[1],
     "//": lambda x: x[0] // x[1],
-    ".": None,  # not a function ,just a placeholder
+    ".": ".",  # must return itself, not None
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list
     "cdr": lambda x: (
         x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
     ),  # handle dot list
-    "quote": lambda x: x[0] if len(x) == 1 else x,  # pay attention
+    "quote": lambda x: f"'{x[0]}",
+    "list": lambda x: x,
     "cons": lambda x: (
         [x[0]] + x[1] if type(x[1]) is list else [x[0], ".", x[1]]
     ),
