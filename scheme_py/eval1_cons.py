@@ -133,7 +133,7 @@ apply_map = {
     "cdr": lambda x: (
         x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
     ),  # handle dot list
-    "quote": lambda x: f"'{x[0]}",  # add ' as a prefix
+    "quote": lambda x: f"'{x[0]}",  # add ' as a prefix, this is simple quote, different from quote in scheme
     "list": lambda x: x,
     "cons": lambda x: (
         [x[0]] + x[1] if type(x[1]) is list else [x[0], ".", x[1]]

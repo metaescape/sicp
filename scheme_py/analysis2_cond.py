@@ -24,6 +24,10 @@ def clean_expression(expression: str):
 def maybe_to_number(token: str):
     if token in set("+-.") and len(token) == 1:
         return token
+    if token == "#t":
+        return 1
+    if token == "#f":
+        return 0
     if token[0] in _NUMERAL_STARTS:
         try:
             return int(token)
@@ -105,30 +109,53 @@ def read_and_parse(path: str) -> List[List[str]]:
 
 
 def evaluate(exp: list):
-    if type(exp) is int or type(exp) is float:
-        return exp
+    return analysis(exp)()
+
+
+def analysis(exp: list):
+    if isinstance(exp, (int, float)):
+        return lambda: exp
     if type(exp) is str:
-        return apply_map.get(exp, exp)
+        if exp in APPLY_MAP:  # primitive functions
+            return lambda: APPLY_MAP[exp]
+        if exp in KEYWORDS:
+            return lambda: KEYWORDS[exp]
+        return lambda: exp
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
-            return evaluate(exp[2]) if evaluate(exp[1]) else evaluate(exp[3])
+            predicate = analysis(exp[1])
+            consequent = analysis(exp[2])
+            alternative = analysis(exp[3])
+            return lambda: consequent() if predicate() else alternative()
         if exp[0] == "cond":
-            for i in range(1, len(exp)):
-                if evaluate(exp[i][0]):
-                    return evaluate(exp[i][1])
-            return None
-        return apply(exp[0], [evaluate(c) for c in exp[1:]])
+            clause_list = []
+            for clause in exp[1:]:
+                predicate, consequent = clause
+                clause_list.append((analysis(predicate), analysis(consequent)))
+
+            def cond():
+                for predicate, consequent in clause_list:
+                    if predicate():
+                        return consequent()
+                raise ValueError("no true clause found in cond")
+
+            return cond
+        # apply function
+
+        proc = analysis(exp[0])
+        args = [analysis(arg) for arg in exp[1:]]
+        return lambda: proc()([arg() for arg in args])
     else:
         raise TypeError(f"{exp} is not a number or call expression")
 
 
-def apply(proc, args):
-    # print("app--", proc, args)
-    return apply_map[proc](args)
+# separate the apply_map from
+
+KEYWORDS = {".": ".", "else": True, "#t": True, "#f": False}
 
 
-apply_map = {
+APPLY_MAP = {
     "+": lambda x: sum(x),
     "-": lambda x: x[0] - x[1],
     "*": lambda x: x[0] * x[1],
@@ -139,10 +166,6 @@ apply_map = {
     "=": lambda x: x[0] == x[1],
     ">=": lambda x: x[0] >= x[1],
     "<=": lambda x: x[0] <= x[1],
-    ".": None,  # not a function ,just a placeholder
-    "else": True,
-    "#t": True,
-    "#f": False,
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list

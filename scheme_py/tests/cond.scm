@@ -1,6 +1,8 @@
 #lang sicp
 
-(if true (+ 1 (* 2 3)) 0)
+(if #t (+ 1 (* 2 3)) 0)
+
+(if #f (+ 1 (* 2 3)) 0)
 
 (if (- 1 1) (+ 1 (* 2 3)) (* 2 4))
 
@@ -9,5 +11,5 @@
 
 
 (cond ((> 2 2) 'greater)
-      (true (if (< 2 2) 'less 'equal)))
+      (else (if (< 2 2) 'less 'equal)))
       
