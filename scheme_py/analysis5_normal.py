@@ -1,5 +1,7 @@
 """
-A scheme interpreter that support car/cdr/cons/quote/cond/if/true/false/clousure in normal order
+A scheme interpreter that support car/cdr/cons/quote/cond/if/true/false
+
+support closure (high order function)
 
 """
 
@@ -107,58 +109,80 @@ def read_and_parse(path: str) -> List[List[str]]:
 # codes above are for parsing the scheme code
 
 
-def evaluate(exp: list, env: list = []):
+def evaluate(exp: list, env=[{}]):
+    return analysis(exp)([KEYWORDS])
+
+
+def analysis(exp: list):
     if isinstance(exp, (int, float)):
-        return exp
-    if type(exp) is str:
-        value = lookup(exp, env)
-        if type(value) is tuple:
-            return evaluate(
-                value[0], value[1]
-            )  # recursion here to expand delay
-        if value is None:
-            return apply_map.get(exp, exp)
-        return value
+        return lambda env: exp
+    if isinstance(exp, str):
+
+        def _look(env):
+            value = lookup(exp, env)
+            if value and type(value) is tuple and value[0] == "delay":
+                return value[1](value[2])
+            if value:
+                return value
+            return exp
+
+        return _look
+        # (nonstandard) quote or invalid variable, no built-in function here
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
-            return (
-                evaluate(exp[2], env)
-                if evaluate(exp[1], env)
-                else evaluate(exp[3], env)
+            predicate = analysis(exp[1])
+            consequent = analysis(exp[2])
+            alternative = analysis(exp[3])
+            return lambda env: (
+                consequent(env) if predicate(env) else alternative(env)
             )
         if exp[0] == "cond":
-            for i in range(1, len(exp)):
-                if evaluate(exp[i][0], env):
-                    return evaluate(exp[i][1], env)
-            return None
-        if exp[0] == "lambda":
-            return exp, env  # closure
-        return apply(
-            evaluate(exp[0], env),
-            [
-                (c, env) for c in exp[1:]
-            ],  # 1d recursion, eval of argument are delayed
-        )
+            clause_list = []
+            for clause in exp[1:]:
+                predicate, consequent = clause
+                clause_list.append((analysis(predicate), analysis(consequent)))
 
+            def cond(env):
+                for predicate, consequent in clause_list:
+                    if predicate(env):
+                        return consequent(env)
+                return None
+
+            return cond
+        if exp[0] == "lambda":
+            body = analysis(exp[2])
+            return lambda env: (
+                exp[1],
+                body,
+                env,
+            )  # miss env cost me a lot of time
+
+        args_analysis = [analysis(e) for e in exp[1:]]
+        proc = analysis(exp[0])
+
+        def _apply(env):
+
+            func = proc(env)
+            args = [("delay", arg, env) for arg in args_analysis]
+            if type(func) is tuple:  # clousure
+                parameters, body, func_env = func
+                new_env = create_env(dict(zip(parameters, args)), func_env)
+
+                return body(new_env)
+            args = [arg(env) for arg in args_analysis]
+            return func(args)
+
+        return _apply
     else:
         raise TypeError(f"{exp} is not a number or call expression")
 
 
-def apply(proc, args):
-    if type(proc) == tuple:  # handle closure
-        exp, env = proc
-        parameters = exp[1]
-        env = create_env(dict(zip(parameters, args)), env)
-        return evaluate(exp[2], env)
-    return proc([evaluate(*arg) for arg in args])
-
-
-apply_map = {
-    ".": ".",  # not a function ,just a placeholder
+KEYWORDS = {
+    ".": ".",
+    "else": True,
     "#t": True,
     "#f": False,
-    "else": True,
     "+": lambda x: sum(x),
     "-": lambda x: x[0] - x[1],
     "*": lambda x: x[0] * x[1],
@@ -169,11 +193,10 @@ apply_map = {
     "=": lambda x: x[0] == x[1],
     ">=": lambda x: x[0] >= x[1],
     "<=": lambda x: x[0] <= x[1],
-    # not a function ,just a placeholder
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list
-    "cdr": lambda x: (
+    "cdr": lambda x,: (
         x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
     ),  # handle dot list
     "quote": lambda x: f"'{x[0]}",  # add ' as a prefix

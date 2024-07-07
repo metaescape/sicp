@@ -190,9 +190,6 @@ apply_map = {
 }
 
 
-env = []
-
-
 def lookup(variable: str, env: list):
     for frame in env:
         if variable in frame:

@@ -144,7 +144,11 @@ def analysis(exp: list):
             return cond
         if exp[0] == "lambda":
             body = analysis(exp[2])
-            return lambda env: (exp[1], body, env)  # miss env
+            return lambda env: (
+                exp[1],
+                body,
+                env,
+            )  # miss env cost me a lot of time
 
         args_analysis = [analysis(e) for e in exp[1:]]
         proc = analysis(exp[0])
@@ -153,7 +157,7 @@ def analysis(exp: list):
             args = [arg(env) for arg in args_analysis]
             func = proc(env)
 
-            if type(func) is tuple:
+            if type(func) is tuple:  # clousure
                 parameters, body, func_env = func
                 new_env = create_env(dict(zip(parameters, args)), func_env)
 
