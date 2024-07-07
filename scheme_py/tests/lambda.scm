@@ -1,7 +1,16 @@
 #lang scheme
 
+(* 1 2)
+
+(car '(1 . 2))
+
+(cdr '(1 . 2))
+
 (cond ((> 2 2) 'greater)
-      (true (if (< 2 2) 'less 'equal)))
+      (#t (if (< 2 2) 'less 'equal)))
+
+(cond ((> 2 2) 'greater)
+      (#f (if (< 2 2) 'less 'equal)))
 
 ((lambda (x) (* x x)) 3)
 

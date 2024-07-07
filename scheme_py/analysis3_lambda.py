@@ -1,14 +1,10 @@
-"""
-A scheme interpreter that support car/cdr/cons/quote/cond/if/true/false
-
-also support lambda expression as the first element of a list
-
-"""
-
 from typing import List
 import string
 import os
 
+"""
+A scheme interpreter that only support car/cdr/cons/quote/cond/if/true/false
+"""
 
 # _NUMERAL_STARTS from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
 _NUMERAL_STARTS = set(string.digits) | set("+-.")
@@ -109,63 +105,69 @@ def read_and_parse(path: str) -> List[List[str]]:
 # codes above are for parsing the scheme code
 
 
-def evaluate(exp: list, env: list = []):
-    if type(exp) is int or type(exp) is float:
-        return exp
+def evaluate(exp: list):
+    return analysis(exp, [{}])()
+
+
+def analysis(exp: list, env: list):
+    if isinstance(exp, (int, float)):
+        return lambda: exp
     if type(exp) is str:
         if exp in KEYWORDS:
-            return KEYWORDS[exp]
+            return lambda: KEYWORDS[exp]
         value = lookup(exp, env)
-        if value is None:
-            return exp  # (nonstandard) quote or invalid variable
-        return value
+        if value is not None:
+            return value
+        return lambda: exp  # (nonstandard) quote or invalid variable
     if type(exp) is list:
         if exp[0] == "if":
             assert len(exp) == 4, "if statement should have 3 arguments"
-            return (
-                evaluate(exp[2], env)
-                if evaluate(exp[1], env)
-                else evaluate(exp[3], env)
-            )
+            predicate = analysis(exp[1], env)
+            consequent = analysis(exp[2], env)
+            alternative = analysis(exp[3], env)
+            return lambda: (consequent() if predicate() else alternative())
         if exp[0] == "cond":
-            for i in range(1, len(exp)):
-                if evaluate(exp[i][0], env):
-                    return evaluate(exp[i][1], env)
-            return None
-        # if exp[0] == "lambda":
-        #     return exp
-        if (
-            type(exp[0]) is list
-        ):  # lambda expression, only handle non nested lambda
+            clause_list = []
+            for clause in exp[1:]:
+                predicate, consequent = clause
+                clause_list.append(
+                    (analysis(predicate, env), analysis(consequent, env))
+                )
+
+            def cond():
+                for predicate, consequent in clause_list:
+                    if predicate():
+                        return consequent()
+                return None
+
+            return cond
+
+        if type(exp[0]) is list:  # lambda
             return apply_lambda(exp, env)
 
-        return apply(exp[0], [evaluate(c, env) for c in exp[1:]])
-
+        proc = APPLY_MAP[exp[0]]
+        args = [analysis(arg, env) for arg in exp[1:]]
+        return lambda: proc([arg() for arg in args])
     else:
         raise TypeError(f"{exp} is not a number or call expression")
 
 
-def apply(proc, args):
-    return apply_map[proc](args)
-
-
 def apply_lambda(exp, env):
-    parameters = exp[0][1]
-    arguments = [evaluate(c, env) for c in exp[1:]]
-    env = create_env(dict(zip(parameters, arguments)), env)
-    # print(env, exp)
-    # print(env, exp[0][2])
-    return evaluate(exp[0][2], env)
+    lambda_exp = exp[0]
+    args = exp[1:]
+    parameters = lambda_exp[1]
+    body = lambda_exp[2]  # do not support multiple expressions in body
+    arguments = [analysis(arg, env) for arg in args]
+    env = create_env(
+        dict(zip(parameters, arguments)), env
+    )  # key: lambda: value
+    return lambda: analysis(body, env)()
 
 
-KEYWORDS = {
-    ".": ".",  # not a function ,just a placeholder
-    "#t": True,
-    "#f": False,
-    "else": True,
-}
+KEYWORDS = {".": ".", "else": True, "#t": True, "#f": False}
 
-apply_map = {
+
+APPLY_MAP = {
     "+": lambda x: sum(x),
     "-": lambda x: x[0] - x[1],
     "*": lambda x: x[0] * x[1],
@@ -179,7 +181,7 @@ apply_map = {
     "car": lambda x: x[0][
         0
     ],  # pay attention, the arguments of car is a nested list
-    "cdr": lambda x: (
+    "cdr": lambda x,: (
         x[0][-1] if len(x[0]) == 3 and x[0][1] == "." else x[0][1:]
     ),  # handle dot list
     "quote": lambda x: f"'{x[0]}",  # add ' as a prefix
@@ -188,9 +190,6 @@ apply_map = {
         [x[0]] + x[1] if type(x[1]) is list else [x[0], ".", x[1]]
     ),
 }
-
-
-env = []
 
 
 def lookup(variable: str, env: list):
