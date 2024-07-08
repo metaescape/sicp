@@ -1,9 +1,10 @@
 #lang scheme
 
+(* 2 (* 2 4))
+
 (cond ((> 2 2) 'greater)
       (true (if (< 2 2) 'less 'equal)))
 
-(* 2 (* 2 4))
 
 ((lambda (x) (* x x)) 3)
 

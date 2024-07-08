@@ -1,6 +1,11 @@
 #!/bin/bash
 
+
+# Your existing code here
+
 if [ "$1" = "analysis" ]; then
+    echo "Running tests..."
+    start_time=$(date +%s%3N)
     if [ "$2" = "calculator" ]; then
         python analysis0_calculator.py --test
     elif [ "$2" = "cons" ]; then
@@ -13,6 +18,8 @@ if [ "$1" = "analysis" ]; then
         python analysis4_closure.py --test
     elif [ "$2" = "normal" ]; then
         python analysis5_normal.py --test
+    elif [ "$2" = "memo" ]; then
+        python analysis5.5_memo.py --test
     elif [ "$2" = "let" ]; then
         python analysis6_let.py --test
     elif [ "$2" = "define" ]; then
@@ -32,9 +39,15 @@ if [ "$1" = "analysis" ]; then
     else
         echo "Invalid argument. Please specify a valid option."
     fi
+    end_time=$(date +%s%3N)
+    elapsed_time=$((end_time - start_time))
+    echo "Tests completed in $elapsed_time milliseconds."
 fi
 
+
 if [ "$1" = "eval" ]; then
+    echo "Running tests..."
+    start_time=$(date +%s%3N)
     if [ "$2" = "calculator" ]; then
         python eval0_calculator.py --test
     elif [ "$2" = "cons" ]; then
@@ -47,6 +60,8 @@ if [ "$1" = "eval" ]; then
         python eval4_closure.py --test
     elif [ "$2" = "normal" ]; then
         python eval5_normal.py --test
+    elif [ "$2" = "memo" ]; then
+        python eval5.5_memo.py --test
     elif [ "$2" = "let" ]; then
         python eval6_let.py --test
     elif [ "$2" = "define" ]; then
@@ -66,4 +81,7 @@ if [ "$1" = "eval" ]; then
     else
         echo "Invalid argument. Please specify a valid option."
     fi
+    end_time=$(date +%s%3N)
+    elapsed_time=$((end_time - start_time))
+    echo "Tests completed in $elapsed_time milliseconds."
 fi
