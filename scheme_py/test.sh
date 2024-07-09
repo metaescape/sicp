@@ -24,8 +24,8 @@ if [ "$1" = "analysis" ]; then
         python analysis6_let.py --test
     elif [ "$2" = "define" ]; then
         python analysis7_define.py --test
-    elif [ "$2" = "mit" ]; then
-        python analysis8_mit.py --test
+    elif [ "$2" = "stream" ]; then
+        python analysis8_stream.py --test
     elif [ "$2" = "all" ]; then
         python analysis0_calculator.py --test
         python analysis1_cons.py --test
@@ -35,7 +35,7 @@ if [ "$1" = "analysis" ]; then
         python analysis5_normal.py --test
         python analysis6_let.py --test
         python analysis7_define.py --test
-        python analysis8_mit.py --test
+        python analysis8_stream.py --test
     else
         echo "Invalid argument. Please specify a valid option."
     fi
@@ -66,8 +66,8 @@ if [ "$1" = "eval" ]; then
         python eval6_let.py --test
     elif [ "$2" = "define" ]; then
         python eval7_define.py --test
-    elif [ "$2" = "mit" ]; then
-        python eval8_mit.py --test
+    elif [ "$2" = "stream" ]; then
+        python eval8_stream.py --test
     elif [ "$2" = "all" ]; then
         python eval0_calculator.py --test
         python eval1_cons.py --test
@@ -77,7 +77,7 @@ if [ "$1" = "eval" ]; then
         python eval5_normal.py --test
         python eval6_let.py --test
         python eval7_define.py --test
-        python eval8_mit.py --test
+        python eval8_stream.py --test
     else
         echo "Invalid argument. Please specify a valid option."
     fi
