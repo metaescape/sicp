@@ -52,6 +52,13 @@ def to_list_ast(expression: List) -> List:
     return stack
 
 
+def ast_to_sexp(ast):
+    if type(ast) is list:
+        return "(" + " ".join([ast_to_sexp(e) for e in ast]) + ")"
+    else:
+        return str(ast)
+
+
 def read_and_parse(path: str) -> List[List[str]]:
     """
     expressions are split by "\n"
@@ -79,14 +86,16 @@ def read_and_parse(path: str) -> List[List[str]]:
     return exp
 
 
+from itertools import zip_longest
+
+
 def match(query, data, frame: dict):
     frames = []
-    print(data)
     if query[0] != data[0]:
         return False
-    breakpoint()
-    for q, e in zip(query, data):
-        if q.startswith("?"):
+
+    for q, e in zip_longest(query, data, fillvalue="never hit me"):
+        if type(q) is str and q.startswith("?"):
             if q in frame:
                 if frame[q] != e:
                     return False
@@ -96,8 +105,12 @@ def match(query, data, frame: dict):
             if q != e:
                 return False
         else:
-            frames.append(match(q, e, frame))
-            return unify(frames, frame)
+            res = match(q, e, frame)
+            if not res:
+                return False
+
+    # breakpoint()
+    return unify(frames, frame)
 
 
 def unify(frames, frame):
@@ -115,10 +128,12 @@ def evaluate(expression: list, db: list):
 def test_simple():
     db = read_and_parse("tests/db.scm")
     querys = read_and_parse("tests/simple.scm")
-    for data in db:
-        print(data)
-    # for query in querys:
-    #     print(evaluate(query, db))
+
+    for query in querys:
+        res = evaluate(query, db)
+        print("---- query: ", ast_to_sexp(query))
+        for r in res:
+            print(ast_to_sexp(r))
 
 
 if __name__ == "__main__":
