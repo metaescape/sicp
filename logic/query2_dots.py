@@ -3,7 +3,7 @@ import string
 import os
 
 """
-A query interpreter that support simple query without dot list
+A query interpreter that support simple query with dot list
 """
 
 # _NUMERAL_STARTS from https://www.composingprograms.com/examples/scalc/scheme_tokens.py.html
@@ -91,25 +91,43 @@ from itertools import zip_longest
 
 def match(query, data, frame: dict):
     frames = []
-    if query[0] != data[0]:
-        return False
 
-    for q, e in zip_longest(query, data, fillvalue="never hit me"):
+    i = 0
+    while i < len(query):
+        q, e = query[i], data[i]
         if type(q) is str and q.startswith("?"):
             if q in frame:
                 if frame[q] != e:
                     return False
             else:
                 frame[q] = e
+            i += 1
+
+        elif q == ".":
+            assert query[i + 1].startswith(
+                "?"
+            ), "dot should be followed by a query variable"
+            q = query[i + 1]
+
+            if q in frame:
+                if frame[q] != data[i:]:
+                    return False
+                else:
+                    frame[q] = data[i:]
+
+            return frame
         elif type(q) == str:
             if q != e:
                 return False
+            i += 1
         else:
             res = match(q, e, frame)
             if not res:
                 return False
+            i += 1
+    if i != len(data):
+        return False
 
-    # breakpoint()
     return unify(frames, frame)
 
 
@@ -127,7 +145,7 @@ def evaluate(expression: list, db: list):
 
 def test_simple():
     db = read_and_parse("tests/db.scm")
-    querys = read_and_parse("tests/simple.scm")
+    querys = read_and_parse("tests/dots.scm")
 
     for query in querys:
         res = evaluate(query, db)
