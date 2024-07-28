@@ -8,10 +8,12 @@ if [ "$1" = "var" ]; then
     python var.py --test
 elif [ "$1" = "lambda" ]; then
     python lambda.py --test
-elif [ "$1" = "cond" ]; then
-    python analysis2_cond.py --test
-elif [ "$1" = "lambda" ]; then
-    python analysis3_lambda.py --test
+elif [ "$1" = "apply" ]; then
+    python apply.py --test
+elif [ "$1" = "apply_paren" ]; then
+    python apply_paren.py --test
+elif [ "$1" = "paren" ]; then
+    python paren.py --test
 
 elif [ "$1" = "all" ]; then
     python var.py --test
