@@ -6,8 +6,8 @@ echo "Running tests..."
 start_time=$(date +%s%3N)
 if [ "$1" = "var" ]; then
     python var.py --test
-elif [ "$1" = "cons" ]; then
-    python analysis1_cons.py --test
+elif [ "$1" = "lambda" ]; then
+    python lambda.py --test
 elif [ "$1" = "cond" ]; then
     python analysis2_cond.py --test
 elif [ "$1" = "lambda" ]; then
