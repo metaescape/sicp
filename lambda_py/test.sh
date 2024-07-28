@@ -12,6 +12,8 @@ elif [ "$1" = "apply" ]; then
     python apply.py --test
 elif [ "$1" = "apply_paren" ]; then
     python apply_paren.py --test
+elif [ "$1" = "lambda_paren" ]; then
+    python lambda_paren.py --test
 elif [ "$1" = "paren" ]; then
     python paren.py --test
 
