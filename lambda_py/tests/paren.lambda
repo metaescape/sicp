@@ -1,5 +1,6 @@
 Lx.xy
 λxyz.xyz
 λxyz.x(yz)
+(λxyz.x(yz))(mn)
 (Lx.x)(Ly.y)
 (λf.f(xx))(λf.f(xx))

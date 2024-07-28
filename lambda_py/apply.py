@@ -37,13 +37,6 @@ class LLLparser:
         self.s = "".join(s.split())  # delete spacees
         self.i = 0
 
-    def parse_variable(self):
-        # only 1 characters
-        if self.s[self.i] in string.ascii_lowercase:
-            var = Apply(self.s[self.i])
-            self.i += 1
-            return var
-
     def parse_apply(self):
         if self.i == len(self.s):
             return None

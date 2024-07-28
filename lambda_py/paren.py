@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 import string
 import os
 
@@ -42,7 +42,7 @@ class LLLparser:
             return None
         if self.s[self.i] == "(":
             self.i += 1
-            first = self.parse_apply()
+            first = self.parse()
             assert self.s[self.i] == ")", "parentheses not match"
             self.i += 1
         else:
@@ -59,6 +59,13 @@ class LLLparser:
         return Lambda(var, self.parse_lambda())
 
     def parse(self):
+        if self.s[self.i] == "(" and self.s[self.i + 1] in "Lλ":
+            self.i += 2
+            lmb = self.parse_lambda()
+            assert self.s[self.i] == ")", "parentheses not match"
+            self.i += 1
+            return Apply(lmb, self.parse_apply())
+
         if self.s[self.i] in "Lλ":
             self.i += 1
             return self.parse_lambda()

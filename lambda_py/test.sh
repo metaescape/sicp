@@ -19,6 +19,11 @@ elif [ "$1" = "paren" ]; then
 
 elif [ "$1" = "all" ]; then
     python var.py --test
+    python lambda.py --test
+    python apply.py --test
+    python apply_paren.py --test
+    python lambda_paren.py --test
+    python paren.py --test
 
 else
     echo "Invalid argument. Please specify a valid option."
