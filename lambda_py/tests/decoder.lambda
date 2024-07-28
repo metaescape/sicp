@@ -1,0 +1,6 @@
+λfx.x
+λfx.f(x)
+λf.λx.f(f(x))
+λfx.f(f(x))
+λfx.f
+λfx.x

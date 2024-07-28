@@ -4,4 +4,5 @@ Lx.xy
 (λxyz.x(yz))(mn)
 (Lx.x)(Ly.y)
 (λf.f(xx))(λf.f(xx))
-λf.λx.f(f(x))
+(λf.f(xx))((λf.f(xx)))
+(λf.f(x(x)))(λf.f(xx))

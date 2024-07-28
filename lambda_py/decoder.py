@@ -92,7 +92,18 @@ def read_and_parse(path: str) -> List[List[str]]:
 
 
 def evaluate(exp):
-    return exp
+    return decode(exp)
+
+
+def decode(lam: Lambda):
+    def inc(x):
+        return x + 1
+
+    exp = eval(str(lam))
+    try:
+        return exp(1)(0)
+    except:
+        return exp(inc)(0)
 
 
 def test_evaluate_file():
@@ -100,7 +111,7 @@ def test_evaluate_file():
     file_name = path.split("/")[-1].split(".")[0]
     test_file = f"tests/{file_name}.lambda"
     for exp in read_and_parse(test_file):
-        print(exp)
+        print(evaluate(exp))
 
 
 if __name__ == "__main__":

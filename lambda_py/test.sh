@@ -16,6 +16,10 @@ elif [ "$1" = "lambda_paren" ]; then
     python lambda_paren.py --test
 elif [ "$1" = "paren" ]; then
     python paren.py --test
+elif [ "$1" = "decoder" ]; then
+    python decoder.py --test
+elif [ "$1" = "eval" ]; then
+    python eval.py --test
 
 elif [ "$1" = "all" ]; then
     python var.py --test
@@ -24,6 +28,7 @@ elif [ "$1" = "all" ]; then
     python apply_paren.py --test
     python lambda_paren.py --test
     python paren.py --test
+    python eval.py --test
 
 else
     echo "Invalid argument. Please specify a valid option."
